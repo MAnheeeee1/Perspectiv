@@ -1,65 +1,107 @@
-import Image from "next/image";
+import Link from "next/link";
 
-export default function Home() {
+const features = [
+  {
+    href: "/nyhetsflodet",
+    title: "Nyhetsflödet",
+    description:
+      "Hämta de senaste artiklarna från SvD, DN, Aftonbladet och Omni på ett ställe.",
+    emoji: "📰",
+    cta: "Öppna flödet",
+    color: "border-blue-200 hover:border-blue-400",
+    ctaColor: "bg-blue-600 hover:bg-blue-700",
+  },
+  {
+    href: "/vinklinganalys",
+    title: "Vinklingsanalys",
+    description:
+      "Analysera ton, politisk vinkling och saknade perspektiv i valfri artikel.",
+    emoji: "🔍",
+    cta: "Analysera artikel",
+    color: "border-violet-200 hover:border-violet-400",
+    ctaColor: "bg-violet-600 hover:bg-violet-700",
+  },
+  {
+    href: "/jamforelsevy",
+    title: "Jämförelsevy",
+    description:
+      "Se hur olika källor rapporterar om samma nyhet bredvid varandra.",
+    emoji: "⚖",
+    cta: "Kommer snart",
+    color: "border-slate-200",
+    ctaColor: "bg-slate-400 cursor-not-allowed",
+    disabled: true,
+  },
+  {
+    href: "/kalloversikt",
+    title: "Källöversikt",
+    description:
+      "Få en bild av hur en nyhetskälla brukar rapportera baserat på redaktionell profil.",
+    emoji: "📊",
+    cta: "Utforska källor",
+    color: "border-amber-200 hover:border-amber-400",
+    ctaColor: "bg-amber-600 hover:bg-amber-700",
+  },
+];
+
+export default function HomePage() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      {/* Hero */}
+      <div className="text-center mb-16">
+        <div className="inline-flex items-center gap-2 mb-4">
+          <span className="text-blue-500 font-black text-5xl leading-none">P</span>
+          <span className="font-bold text-4xl text-slate-900 tracking-tight">erspectiv</span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+        <p className="text-lg text-slate-500 max-w-xl mx-auto leading-relaxed">
+          En plattform för att jämföra nyheter från svenska medier och analysera
+          hur samma händelse vinklas av olika källor.
+        </p>
+        <div className="flex gap-3 justify-center mt-6">
+          <Link
+            href="/nyhetsflodet"
+            className="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-blue-700 transition-colors"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            Kom igång
+          </Link>
+          <Link
+            href="/vinklinganalys"
+            className="bg-white text-slate-700 border border-slate-300 px-6 py-2.5 rounded-lg font-semibold text-sm hover:border-slate-400 transition-colors"
           >
-            Documentation
-          </a>
+            Analysera artikel
+          </Link>
         </div>
-      </main>
+      </div>
+
+      {/* Feature cards */}
+      <div className="grid sm:grid-cols-2 gap-5">
+        {features.map(({ href, title, description, emoji, cta, color, ctaColor, disabled }) => (
+          <div
+            key={href}
+            className={`bg-white rounded-2xl border-2 p-6 flex flex-col gap-3 transition-colors ${color}`}
+          >
+            <div className="text-3xl">{emoji}</div>
+            <div>
+              <h2 className="font-bold text-slate-900 text-lg mb-1">{title}</h2>
+              <p className="text-sm text-slate-500 leading-relaxed">{description}</p>
+            </div>
+            {disabled ? (
+              <span
+                className={`self-start mt-auto px-4 py-2 rounded-lg text-white text-sm font-semibold ${ctaColor}`}
+              >
+                {cta}
+              </span>
+            ) : (
+              <Link
+                href={href}
+                className={`self-start mt-auto px-4 py-2 rounded-lg text-white text-sm font-semibold transition-colors ${ctaColor}`}
+              >
+                {cta}
+              </Link>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
