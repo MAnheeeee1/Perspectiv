@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { useGlobalLoading } from "@/app/components/LoadingProvider";
+
 interface NewsItem {
   title: string;
   author: string | null;
@@ -18,21 +20,101 @@ interface NewsData {
 }
 
 const SOURCE_OPTIONS = [
-  { label: "SvD", url: "https://www.svd.se" },
-  { label: "Omni", url: "https://omni.se" },
-  { label: "DN", url: "https://www.dn.se" },
-  { label: "Aftonbladet", url: "https://www.aftonbladet.se" },
+  { label: "SvD", url: "https://www.svd.se", group: "sv" },
+  { label: "Omni", url: "https://omni.se", group: "sv" },
+  { label: "DN", url: "https://www.dn.se", group: "sv" },
+  { label: "Aftonbladet", url: "https://www.aftonbladet.se", group: "sv" },
+  { label: "BBC", url: "https://www.bbc.com/news", group: "int" },
+  { label: "The Guardian", url: "https://www.theguardian.com", group: "int" },
+  { label: "Al Jazeera", url: "https://www.aljazeera.com", group: "int" },
+  { label: "AP News", url: "https://apnews.com", group: "int" },
 ];
+
+const CACHE_KEY = "nyhetsflodet_cache";
+
+interface CachedNews {
+  results: NewsData[];
+  errors: string[];
+  fetchedAt: string;
+}
+
+function loadCache(): CachedNews | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? (JSON.parse(raw) as CachedNews) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveCache(data: CachedNews) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+function formatRelative(isoString: string): string {
+  const diff = Date.now() - new Date(isoString).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "just nu";
+  if (mins < 60) return `${mins} min sedan`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} tim sedan`;
+  return `${Math.floor(hours / 24)} dag(ar) sedan`;
+}
+
+function SectionHeader({ label }: { label: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", marginBottom: "0.75rem" }}>
+      <span
+        style={{
+          fontSize: "11px",
+          textTransform: "uppercase",
+          letterSpacing: "0.15em",
+          fontWeight: 500,
+          color: "rgba(255,255,255,0.45)",
+          paddingRight: "1rem",
+          flexShrink: 0,
+        }}
+      >
+        {label}
+      </span>
+      <div style={{ flex: 1, height: "1px", background: "var(--border)" }} />
+    </div>
+  );
+}
 
 export default function NyhetsFlödet() {
   const [results, setResults] = useState<NewsData[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedSources, setSelectedSources] = useState<string[]>(
-    SOURCE_OPTIONS.map((s) => s.url),
+    SOURCE_OPTIONS.filter((s) => s.group === "sv").map((s) => s.url),
   );
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [fetched, setFetched] = useState(false);
+  const [fetchedAt, setFetchedAt] = useState<string | null>(null);
+  const [relativeTime, setRelativeTime] = useState<string>("");
+  const setGlobalLoading = useGlobalLoading();
+
+  useEffect(() => {
+    const cached = loadCache();
+    if (cached) {
+      setResults(cached.results);
+      setErrors(cached.errors);
+      setFetchedAt(cached.fetchedAt);
+      setFetched(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!fetchedAt) return;
+    setRelativeTime(formatRelative(fetchedAt));
+    const id = setInterval(() => setRelativeTime(formatRelative(fetchedAt)), 30_000);
+    return () => clearInterval(id);
+  }, [fetchedAt]);
 
   function toggleSource(url: string) {
     setSelectedSources((prev) =>
@@ -43,6 +125,7 @@ export default function NyhetsFlödet() {
   async function fetchNews() {
     if (selectedSources.length === 0) return;
     setLoading(true);
+    setGlobalLoading(true);
     setFetched(false);
     try {
       const res = await fetch("/api/news", {
@@ -51,12 +134,18 @@ export default function NyhetsFlödet() {
         body: JSON.stringify({ sources: selectedSources }),
       });
       const data = await res.json();
-      setResults(data.results ?? []);
-      setErrors(data.errors ?? []);
+      const newResults = data.results ?? [];
+      const newErrors = data.errors ?? [];
+      const now = new Date().toISOString();
+      setResults(newResults);
+      setErrors(newErrors);
+      setFetchedAt(now);
+      saveCache({ results: newResults, errors: newErrors, fetchedAt: now });
     } catch (e) {
       setErrors([String(e)]);
     } finally {
       setLoading(false);
+      setGlobalLoading(false);
       setFetched(true);
     }
   }
@@ -72,72 +161,117 @@ export default function NyhetsFlödet() {
   const sourceNames = [...new Set(results.map((r) => r.source?.name).filter(Boolean))];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900 mb-1">Nyhetsflödet</h1>
-        <p className="text-slate-500 text-sm">
-          Hämta de senaste nyheterna från flera svenska källor på ett ställe.
+    <div className="max-w-5xl mx-auto px-6 py-12">
+      {/* Header */}
+      <div style={{ marginBottom: "2.5rem" }}>
+        <h1
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: "clamp(2.5rem, 5vw, 4.5rem)",
+            fontWeight: 400,
+            lineHeight: 0.95,
+            letterSpacing: "-0.03em",
+            color: "white",
+            marginBottom: "0.75rem",
+          }}
+        >
+          Nyhetsflödet
+        </h1>
+        <p style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.7)" }}>
+          Hämta de senaste nyheterna från flera källor på ett ställe.
         </p>
       </div>
 
       {/* Source selector */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5 mb-6 shadow-sm">
-        <p className="text-sm font-medium text-slate-700 mb-3">Välj källor</p>
-        <div className="flex flex-wrap gap-2 mb-4">
-          {SOURCE_OPTIONS.map(({ label, url }) => {
-            const active = selectedSources.includes(url);
-            return (
-              <button
-                key={url}
-                onClick={() => toggleSource(url)}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                  active
-                    ? "bg-blue-600 border-blue-600 text-white"
-                    : "bg-white border-slate-300 text-slate-600 hover:border-blue-400"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
+      <div
+        style={{
+          borderTop: "1px solid rgba(255,255,255,0.08)",
+          borderBottom: "1px solid rgba(255,255,255,0.08)",
+          padding: "1.5rem 0",
+          marginBottom: "2rem",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.375rem", marginBottom: "1.5rem" }}>
+          {(["sv", "int"] as const).map((group) => (
+            <div key={group}>
+              <SectionHeader label={group === "sv" ? "Svenska" : "Internationella"} />
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                {SOURCE_OPTIONS.filter((s) => s.group === group).map(({ label, url }) => {
+                  const active = selectedSources.includes(url);
+                  return (
+                    <button
+                      key={url}
+                      onClick={() => toggleSource(url)}
+                      className={`btn-chip${active ? " chip-active" : ""}`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
-        <button
-          onClick={fetchNews}
-          disabled={loading || selectedSources.length === 0}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {loading ? "Hämtar nyheter…" : "Hämta nyheter"}
-        </button>
-      </div>
 
-      {/* Loading */}
-      {loading && (
-        <div className="flex flex-col items-center justify-center py-24 gap-4">
-          <div className="w-10 h-10 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin" />
-          <p className="text-slate-500 text-sm">Skrapar och analyserar källorna…</p>
+        <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+          <button
+            onClick={fetchNews}
+            disabled={loading || selectedSources.length === 0}
+            className="btn-primary"
+          >
+            {loading ? "Hämtar nyheter…" : "Hämta nyheter"}
+          </button>
+          {fetchedAt && !loading && (
+            <span
+              style={{
+                fontSize: "0.75rem",
+                color: "rgba(255,255,255,0.45)",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+              }}
+            >
+              <span
+                style={{
+                  width: "5px",
+                  height: "5px",
+                  borderRadius: "50%",
+                  background: "rgba(74,222,128,0.8)",
+                  display: "inline-block",
+                  flexShrink: 0,
+                }}
+              />
+              Senast hämtad {relativeTime}
+            </span>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Errors */}
       {errors.length > 0 && fetched && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <p className="text-sm font-medium text-red-700 mb-1">Kunde inte hämta från:</p>
-          <ul className="list-disc list-inside text-sm text-red-600 space-y-0.5">
+        <div
+          style={{
+            border: "1px solid rgba(220,38,38,0.35)",
+            padding: "0.875rem 1rem",
+            marginBottom: "1.5rem",
+            background: "rgba(220,38,38,0.06)",
+          }}
+        >
+          <p style={{ fontSize: "0.8125rem", color: "rgba(252,165,165,0.9)", marginBottom: "0.25rem", fontWeight: 500 }}>
+            Kunde inte hämta från:
+          </p>
+          <ul style={{ fontSize: "0.8125rem", color: "rgba(252,165,165,0.75)", paddingLeft: "1rem" }}>
             {errors.map((e, i) => <li key={i}>{e}</li>)}
           </ul>
         </div>
       )}
 
-      {/* Filter by source */}
+      {/* Filter tabs */}
       {sourceNames.length > 0 && (
-        <div className="flex gap-2 mb-5 flex-wrap">
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
           <button
             onClick={() => setActiveFilter(null)}
-            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-              activeFilter === null
-                ? "bg-slate-800 border-slate-800 text-white"
-                : "bg-white border-slate-300 text-slate-600 hover:border-slate-500"
-            }`}
+            className={`btn-chip${activeFilter === null ? " chip-active" : ""}`}
           >
             Alla ({allArticles.length})
           </button>
@@ -147,11 +281,7 @@ export default function NyhetsFlödet() {
               <button
                 key={name}
                 onClick={() => setActiveFilter(name === activeFilter ? null : name!)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                  activeFilter === name
-                    ? "bg-slate-800 border-slate-800 text-white"
-                    : "bg-white border-slate-300 text-slate-600 hover:border-slate-500"
-                }`}
+                className={`btn-chip${activeFilter === name ? " chip-active" : ""}`}
               >
                 {name} ({count})
               </button>
@@ -162,47 +292,118 @@ export default function NyhetsFlödet() {
 
       {/* Articles grid */}
       {displayed.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: "1px",
+            background: "rgba(255,255,255,0.08)",
+            border: "1px solid rgba(255,255,255,0.08)",
+          }}
+        >
           {displayed.map((article, i) => (
             <div
               key={i}
-              className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md transition-shadow"
+              style={{
+                background: "#0A0A0A",
+                padding: "1.125rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+              }}
             >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "0.5rem" }}>
+                <span
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: "#C9A961",
+                  }}
+                >
                   {article.sourceName}
                 </span>
-                <span className="text-xs text-slate-400">{article.timestamp}</span>
+                <span style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.45)", flexShrink: 0 }}>
+                  {article.timestamp}
+                </span>
               </div>
 
-              <h2 className="font-semibold text-slate-900 text-sm leading-snug line-clamp-3">
+              <h2
+                style={{
+                  fontWeight: 600,
+                  fontSize: "0.875rem",
+                  lineHeight: 1.4,
+                  color: "white",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }}
+              >
                 {article.title}
               </h2>
 
               {article.content && (
-                <p className="text-xs text-slate-500 line-clamp-4 leading-relaxed">
+                <p
+                  style={{
+                    fontSize: "0.8125rem",
+                    color: "rgba(255,255,255,0.7)",
+                    lineHeight: 1.55,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}
+                >
                   {article.content}
                 </p>
               )}
 
               {article.author && (
-                <p className="text-xs text-slate-400">av {article.author}</p>
+                <p style={{ fontSize: "0.6875rem", color: "rgba(255,255,255,0.45)" }}>
+                  av {article.author}
+                </p>
               )}
 
-              <div className="flex gap-2 mt-auto pt-1">
+              <div
+                style={{
+                  display: "flex",
+                  gap: "1rem",
+                  marginTop: "auto",
+                  paddingTop: "0.625rem",
+                  borderTop: "1px solid rgba(255,255,255,0.08)",
+                  alignItems: "center",
+                }}
+              >
                 {article.url && (
                   <a
                     href={article.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-blue-600 hover:underline"
+                    style={{
+                      fontSize: "0.6875rem",
+                      color: "rgba(255,255,255,0.45)",
+                      textDecoration: "underline",
+                      textUnderlineOffset: "2px",
+                    }}
                   >
                     Läs mer →
                   </a>
                 )}
                 <Link
-                  href={`/vinklinganalys?title=${encodeURIComponent(article.title)}&content=${encodeURIComponent(article.content?.slice(0, 2000) ?? "")}&source=${encodeURIComponent(article.sourceName)}`}
-                  className="text-xs text-slate-500 hover:text-slate-700 ml-auto border border-slate-200 px-2 py-0.5 rounded hover:border-slate-400 transition-colors"
+                  href={
+                    article.url
+                      ? `/vinklinganalys?url=${encodeURIComponent(article.url)}&title=${encodeURIComponent(article.title)}&source=${encodeURIComponent(article.sourceName)}`
+                      : `/vinklinganalys?title=${encodeURIComponent(article.title)}&content=${encodeURIComponent(article.content?.slice(0, 2000) ?? "")}&source=${encodeURIComponent(article.sourceName)}`
+                  }
+                  style={{
+                    fontSize: "0.6875rem",
+                    color: "#C9A961",
+                    textDecoration: "underline",
+                    textUnderlineOffset: "2px",
+                    marginLeft: "auto",
+                  }}
                 >
                   Analysera
                 </Link>
@@ -213,14 +414,15 @@ export default function NyhetsFlödet() {
       )}
 
       {fetched && !loading && displayed.length === 0 && errors.length === 0 && (
-        <p className="text-slate-400 text-center py-16">Inga artiklar hittades.</p>
+        <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.45)", paddingTop: "3rem" }}>
+          Inga artiklar hittades.
+        </p>
       )}
 
       {!fetched && !loading && (
-        <div className="text-center py-24 text-slate-400">
-          <p className="text-lg mb-2">Välj källor ovan och klicka på "Hämta nyheter"</p>
-          <p className="text-sm">Varje källa skrapas och analyseras i realtid</p>
-        </div>
+        <p style={{ fontSize: "0.8125rem", color: "rgba(255,255,255,0.45)", paddingTop: "3rem" }}>
+          Välj källor ovan och klicka på &ldquo;Hämta nyheter&rdquo; för att se de senaste artiklarna.
+        </p>
       )}
     </div>
   );

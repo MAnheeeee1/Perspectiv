@@ -14,6 +14,8 @@ interface AnalyzeBody {
   source?: string;
 }
 
+const PAYWALL_THRESHOLD = 800;
+
 function extractJsonText(message: string): string {
   const fencedMatch = message.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
   if (fencedMatch?.[1]) return fencedMatch[1].trim();
@@ -24,6 +26,7 @@ export async function POST(request: Request) {
   const body = (await request.json()) as AnalyzeBody;
 
   let textToAnalyze: string;
+  let limitedContent = false;
 
   if (body.url) {
     const scraped = await scrapeUrl(body.url);
@@ -31,10 +34,19 @@ export async function POST(request: Request) {
       return Response.json({ error: "Failed to scrape URL" }, { status: 502 });
     }
     textToAnalyze = scraped;
+    if (textToAnalyze.length < PAYWALL_THRESHOLD) {
+      limitedContent = true;
+    }
+    if (body.title) {
+      textToAnalyze = `# ${body.title}\n\n${textToAnalyze}`;
+    }
   } else if (body.content) {
     textToAnalyze = body.title
       ? `# ${body.title}\n\n${body.content}`
       : body.content;
+    if (body.content.length < PAYWALL_THRESHOLD) {
+      limitedContent = true;
+    }
   } else {
     return Response.json(
       { error: "Provide either url or content" },
@@ -58,7 +70,7 @@ export async function POST(request: Request) {
       { role: "user", content: textToAnalyze },
     ],
     model: "deepseek-chat",
-    max_tokens: 1024,
+    max_tokens: 1800,
     temperature: 0.2,
   });
 
@@ -74,5 +86,5 @@ export async function POST(request: Request) {
     );
   }
 
-  return Response.json({ analysis });
+  return Response.json({ analysis, limitedContent });
 }
