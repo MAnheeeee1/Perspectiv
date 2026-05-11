@@ -2,102 +2,115 @@ import Link from "next/link";
 
 const features = [
   {
+    num: "01",
     href: "/nyhetsflodet",
     title: "Nyhetsflödet",
-    description:
-      "Hämta de senaste artiklarna från SvD, DN, Aftonbladet och Omni på ett ställe.",
-    emoji: "📰",
+    desc: "Hämta artiklar från SvD, DN, Aftonbladet, Omni och internationella källor på ett ställe.",
     cta: "Öppna flödet",
-    color: "border-blue-200 hover:border-blue-400",
-    ctaColor: "bg-blue-600 hover:bg-blue-700",
+    active: true,
   },
   {
+    num: "02",
     href: "/vinklinganalys",
     title: "Vinklingsanalys",
-    description:
-      "Analysera ton, politisk vinkling och saknade perspektiv i valfri artikel.",
-    emoji: "🔍",
+    desc: "Analysera ton, politisk vinkling och saknade perspektiv i valfri artikel.",
     cta: "Analysera artikel",
-    color: "border-violet-200 hover:border-violet-400",
-    ctaColor: "bg-violet-600 hover:bg-violet-700",
+    active: true,
   },
   {
+    num: "03",
     href: "/jamforelsevy",
     title: "Jämförelsevy",
-    description:
-      "Se hur olika källor rapporterar om samma nyhet bredvid varandra.",
-    emoji: "⚖",
+    desc: "Se hur olika källor rapporterar om samma nyhet bredvid varandra.",
     cta: "Kommer snart",
-    color: "border-slate-200",
-    ctaColor: "bg-slate-400 cursor-not-allowed",
-    disabled: true,
+    active: false,
   },
   {
+    num: "04",
     href: "/kalloversikt",
     title: "Källöversikt",
-    description:
-      "Få en bild av hur en nyhetskälla brukar rapportera baserat på redaktionell profil.",
-    emoji: "📊",
-    cta: "Utforska källor",
-    color: "border-amber-200 hover:border-amber-400",
-    ctaColor: "bg-amber-600 hover:bg-amber-700",
+    desc: "Läs om källornas redaktionella profil och vad som kännetecknar deras rapportering.",
+    cta: "Utforska källorna",
+    active: true,
   },
 ];
 
 export default function HomePage() {
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-      {/* Hero */}
-      <div className="text-center mb-16">
-        <div className="inline-flex items-center gap-2 mb-4">
-          <span className="text-blue-500 font-black text-5xl leading-none">P</span>
-          <span className="font-bold text-4xl text-slate-900 tracking-tight">erspectiv</span>
-        </div>
-        <p className="text-lg text-slate-500 max-w-xl mx-auto leading-relaxed">
-          En plattform för att jämföra nyheter från svenska medier och analysera
-          hur samma händelse vinklas av olika källor.
+    <div className="max-w-5xl mx-auto px-6 py-16">
+      {/* Display heading — anchored at the same left edge as nav logo */}
+      <div style={{ maxWidth: "36rem", marginBottom: "5rem" }}>
+        <h1
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: "clamp(3rem, 7vw, 4.5rem)",
+            fontWeight: 400,
+            lineHeight: 0.95,
+            letterSpacing: "-0.03em",
+            color: "white",
+            marginBottom: "1.5rem",
+          }}
+        >
+          Förstå nyheterna djupare.
+        </h1>
+        <p style={{ fontSize: "1rem", lineHeight: 1.6, color: "var(--text-2)", maxWidth: "28rem" }}>
+          En plattform för att jämföra svenska och internationella nyheter, analysera
+          vinklar och se perspektiv du annars missar.
         </p>
-        <div className="flex gap-3 justify-center mt-6">
-          <Link
-            href="/nyhetsflodet"
-            className="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-semibold text-sm hover:bg-blue-700 transition-colors"
-          >
-            Kom igång
-          </Link>
-          <Link
-            href="/vinklinganalys"
-            className="bg-white text-slate-700 border border-slate-300 px-6 py-2.5 rounded-lg font-semibold text-sm hover:border-slate-400 transition-colors"
-          >
-            Analysera artikel
-          </Link>
-        </div>
       </div>
 
-      {/* Feature cards */}
-      <div className="grid sm:grid-cols-2 gap-5">
-        {features.map(({ href, title, description, emoji, cta, color, ctaColor, disabled }) => (
+      {/* Feature rows */}
+      <div style={{ borderTop: "1px solid var(--border)" }}>
+        {features.map(({ num, href, title, desc, cta, active }) => (
           <div
             key={href}
-            className={`bg-white rounded-2xl border-2 p-6 flex flex-col gap-3 transition-colors ${color}`}
+            style={{
+              borderBottom: "1px solid var(--border)",
+              padding: "1.375rem 0",
+              display: "grid",
+              gridTemplateColumns: "2.5rem 1fr auto",
+              gap: "1.5rem",
+              alignItems: "center",
+            }}
           >
-            <div className="text-3xl">{emoji}</div>
+            <span
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontSize: "0.6875rem",
+                color: "var(--text-3)",
+                letterSpacing: "0.05em",
+              }}
+            >
+              {num}
+            </span>
             <div>
-              <h2 className="font-bold text-slate-900 text-lg mb-1">{title}</h2>
-              <p className="text-sm text-slate-500 leading-relaxed">{description}</p>
-            </div>
-            {disabled ? (
-              <span
-                className={`self-start mt-auto px-4 py-2 rounded-lg text-white text-sm font-semibold ${ctaColor}`}
-              >
-                {cta}
+              <span style={{ fontWeight: 500, fontSize: "0.9375rem", color: "white" }}>
+                {title}
               </span>
-            ) : (
+              <span style={{ fontSize: "0.875rem", color: "var(--text-2)", marginLeft: "1.25rem" }}>
+                {desc}
+              </span>
+            </div>
+            {active ? (
               <Link
                 href={href}
-                className={`self-start mt-auto px-4 py-2 rounded-lg text-white text-sm font-semibold transition-colors ${ctaColor}`}
+                style={{
+                  fontSize: "0.75rem",
+                  fontWeight: 500,
+                  letterSpacing: "0.05em",
+                  color: "var(--accent)",
+                  textDecoration: "underline",
+                  textDecorationColor: "var(--accent)",
+                  textUnderlineOffset: "3px",
+                  whiteSpace: "nowrap",
+                }}
               >
-                {cta}
+                {cta} →
               </Link>
+            ) : (
+              <span style={{ fontSize: "0.75rem", color: "var(--text-3)", whiteSpace: "nowrap" }}>
+                {cta}
+              </span>
             )}
           </div>
         ))}

@@ -4,38 +4,50 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const links = [
-  { href: "/", label: "Hem" },
   { href: "/nyhetsflodet", label: "Flödet" },
-  { href: "/jamforelsevy", label: "Jämförelse" },
   { href: "/vinklinganalys", label: "Analys" },
+  { href: "/jamforelsevy", label: "Jämförelse" },
   { href: "/kalloversikt", label: "Källor" },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
-
   return (
-    <header className="bg-slate-900 text-white shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-16 gap-8">
-        <Link href="/" className="flex items-center gap-2 shrink-0">
-          <span className="text-blue-400 font-black text-2xl leading-none">P</span>
-          <span className="font-semibold text-lg tracking-tight">erspectiv</span>
+    <header style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+      <div
+        className="max-w-5xl mx-auto px-6 flex items-center h-14"
+        style={{ gap: "3rem" }}
+      >
+        <Link
+          href="/"
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: "1.125rem",
+            color: "white",
+            letterSpacing: "-0.015em",
+            textDecoration: "none",
+            flexShrink: 0,
+          }}
+        >
+          Perspectiv
         </Link>
-        <nav className="flex items-center gap-1">
+        <nav style={{ display: "flex", alignItems: "center", gap: "48px" }}>
           {links.map(({ href, label }) => {
-            const active =
-              href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(href);
+            const active = pathname.startsWith(href);
             return (
               <Link
                 key={href}
                 href={href}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                  active
-                    ? "bg-blue-600 text-white"
-                    : "text-slate-300 hover:text-white hover:bg-slate-700"
-                }`}
+                className="nav-link"
+                style={{
+                  fontSize: "0.75rem",
+                  letterSpacing: "0.1em",
+                  color: active ? "white" : "rgba(255,255,255,0.45)",
+                  textDecorationLine: active ? "underline" : "none",
+                  textDecorationColor: "#C9A961",
+                  textDecorationThickness: "2px",
+                  textUnderlineOffset: "5px",
+                }}
               >
                 {label}
               </Link>
