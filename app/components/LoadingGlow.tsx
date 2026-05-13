@@ -2,6 +2,101 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
+// ── Shuffling tips ─────────────────────────────────────────────────────────────
+const TIPS = [
+  "Vem ligger bakom källan? Kontrollera alltid avsändaren.",
+  "En rubrik är inte hela sanningen — läs artikeln.",
+  "Primärkällan är alltid mer tillförlitlig än andrahandsrapporter.",
+  "Saknas datum? Gamla nyheter sprids ofta som om de vore nya.",
+  "Hur vinklas nyheten? Vad väljer man att inte berätta?",
+  "En enda källa räcker sällan — sök bekräftelse någon annanstans.",
+  "Starka känslor i en text kan vara ett tecken på vinklad rapportering.",
+  "Korrelation i en rubrik är sällan detsamma som orsakssamband.",
+  "Är det en åsikt eller ett faktapåstående? Skillnaden är viktig.",
+  "Vem tjänar på att du tror på det här?",
+];
+
+function ShufflingTip({ active }: { active: boolean }) {
+  const [index, setIndex] = useState(() => Math.floor(Math.random() * TIPS.length));
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (!active) return;
+
+    const fadeIn = setTimeout(() => setVisible(true), 50);
+
+    const cycle = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIndex(i => (i + 1) % TIPS.length);
+        setVisible(true);
+      }, 500);
+    }, 4000);
+
+    return () => { clearTimeout(fadeIn); clearInterval(cycle); };
+  }, [active]);
+
+  return (
+    <div
+      aria-live="polite"
+      style={{
+        position: "fixed",
+        inset: 0,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        pointerEvents: "none",
+        zIndex: 9991,
+        opacity: active ? 1 : 0,
+        transition: "opacity 0.7s ease",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 400,
+          padding: "20px 28px",
+          borderRadius: 16,
+          background: "rgba(10, 10, 24, 0.55)",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
+          textAlign: "center",
+          opacity: visible ? 1 : 0,
+          transform: visible ? "translateY(0)" : "translateY(6px)",
+          transition: "opacity 0.45s ease, transform 0.45s ease",
+        }}
+      >
+        <p
+          style={{
+            margin: 0,
+            fontSize: 13,
+            fontWeight: 500,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "rgba(167,139,250,0.75)",
+            marginBottom: 10,
+          }}
+        >
+          Källkritik
+        </p>
+        <p
+          style={{
+            margin: 0,
+            fontSize: 15,
+            lineHeight: 1.65,
+            color: "rgba(255,255,255,0.82)",
+            fontWeight: 400,
+          }}
+        >
+          {TIPS[index]}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Design: multiple masked ring layers, each carrying a high-contrast conic
 // gradient that is mostly dim with a few vivid hot spots. As each ring rotates
@@ -178,6 +273,19 @@ export default function LoadingGlow({ visible }: { visible: boolean }) {
 
   return (
     <>
+      {/* Frosted glass — blurs page content beneath the glow */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "fixed", inset: 0,
+          backdropFilter: active ? "blur(6px) saturate(0.75)" : "blur(0px) saturate(1)",
+          WebkitBackdropFilter: active ? "blur(6px) saturate(0.75)" : "blur(0px) saturate(1)",
+          background: "rgba(8, 8, 20, 0.18)",
+          pointerEvents: "none", zIndex: 9986,
+          opacity: active ? 1 : 0, transition: "opacity 0.7s ease, backdrop-filter 0.7s ease",
+        }}
+      />
+
       {/* Atmospheric edge blush — barely visible, gives frame a colour memory */}
       <div
         aria-hidden="true"
@@ -218,6 +326,9 @@ export default function LoadingGlow({ visible }: { visible: boolean }) {
           opacity: active ? 1 : 0, transition: T,
         }}
       />
+
+      {/* Shuffling källkritik tips — centred above all layers */}
+      <ShufflingTip active={active} />
     </>
   );
 }
