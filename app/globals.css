@@ -38,7 +38,7 @@ main::before {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: max(1.5rem, calc((100% - 64rem) / 2 + 1.5rem));
+  left: max(0.75rem, calc((100% - 64rem) / 2 + 0.75rem));
   width: 1px;
   background: rgba(255,255,255,0.05);
   pointer-events: none;
