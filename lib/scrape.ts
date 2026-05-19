@@ -10,7 +10,7 @@ export async function scrapeUrl(url: string): Promise<string> {
     },
     body: JSON.stringify({
       url,
-      onlyMainContent: false,
+      onlyMainContent: true,
       maxAge: 172800000,
       parsers: ["pdf"],
       formats: ["markdown"],

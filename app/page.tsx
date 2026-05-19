@@ -79,6 +79,7 @@ export default function HomePage() {
                 fontSize: "0.6875rem",
                 color: "var(--text-3)",
                 letterSpacing: "0.05em",
+                paddingLeft: "0.25rem",
               }}
             >
               {num}

@@ -9,6 +9,8 @@ function extractJsonText(message: string): string {
   return message.trim();
 }
 
+const MAX_CONTENT_CHARS = 40_000;
+
 export async function extractNewsFromContent(content: string): Promise<unknown> {
   const openai = new OpenAI({
     baseURL: "https://api.deepseek.com",
@@ -23,7 +25,7 @@ export async function extractNewsFromContent(content: string): Promise<unknown> 
   const completion = await openai.chat.completions.create({
     messages: [
       { role: "system", content: systemPrompt },
-      { role: "user", content },
+      { role: "user", content: content.slice(0, MAX_CONTENT_CHARS) },
     ],
     model: "deepseek-chat",
     max_tokens: 4096,
